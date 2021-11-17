@@ -1,7 +1,4 @@
-import os
 import click
-
-
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
@@ -56,6 +53,24 @@ def build_pipelines(shuffle_data, num_examples):
     return ds_train, ds_test
 
 
+def build_model():
+    model = tf.keras.models.Sequential(
+        [
+            tf.keras.layers.Flatten(input_shape=(28, 28)),
+            tf.keras.layers.Dense(128, activation="relu"),
+            tf.keras.layers.Dense(10),
+        ]
+    )
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+    )
+
+    return model
+
+
 @click.command()
 @click.option("--seed", default=None, help="Value of the global seed to use", type=int)
 @click.option("--shuffle_data", default=True, help="Whether to shuffle the data")
@@ -70,19 +85,7 @@ def main(seed, shuffle_data, num_examples):
 
     ds_train, ds_test = build_pipelines(shuffle_data, num_examples)
 
-    model = tf.keras.models.Sequential(
-        [
-            tf.keras.layers.Flatten(input_shape=(28, 28)),
-            tf.keras.layers.Dense(128, activation="relu"),
-            tf.keras.layers.Dense(10),
-        ]
-    )
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
-    )
+    model = build_model()
 
     hist = model.fit(ds_train, epochs=6, validation_data=ds_test, verbose=0)
 
