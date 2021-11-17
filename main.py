@@ -26,7 +26,7 @@ def evaluate_model(model, ds):
     print(f"Test accuracy:\t{test_acc}")
 
 
-def build_pipelines(shuffle_data, num_examples):
+def build_pipelines(shuffle_data, num_examples_train, num_examples_test):
     (ds_train, ds_test), ds_info = tfds.load(
         "mnist",
         split=["train", "test"],
@@ -38,14 +38,16 @@ def build_pipelines(shuffle_data, num_examples):
     report_dataset(ds_info)
 
     ds_train = ds_train.map(normalize_img, num_parallel_calls=tf.data.AUTOTUNE).take(
-        num_examples
+        num_examples_train
     )
     ds_train = ds_train.cache()
-    ds_train = ds_train.shuffle(num_examples)
+    ds_train = ds_train.shuffle(num_examples_train)
     ds_train = ds_train.batch(128)
     ds_train = ds_train.prefetch(tf.data.AUTOTUNE)
 
-    ds_test = ds_test.map(normalize_img, num_parallel_calls=tf.data.AUTOTUNE)
+    ds_test = ds_test.map(normalize_img, num_parallel_calls=tf.data.AUTOTUNE).take(
+        num_examples_test
+    )
     ds_test = ds_test.batch(128)
     ds_test = ds_test.cache()
     ds_test = ds_test.prefetch(tf.data.AUTOTUNE)
@@ -75,15 +77,22 @@ def build_model():
 @click.option("--seed", default=None, help="Value of the global seed to use", type=int)
 @click.option("--shuffle_data", default=True, help="Whether to shuffle the data")
 @click.option(
-    "--num_examples",
+    "--num_examples_train",
     default=60000,
     help="Number of examples in the training set to actually use for training",
 )
-def main(seed, shuffle_data, num_examples):
+@click.option(
+    "--num_examples_test",
+    default=10000,
+    help="Number of examples in the test set to actually use for evaluation",
+)
+def main(seed, shuffle_data, num_examples_train, num_examples_test):
 
     tf.random.set_seed(seed)
 
-    ds_train, ds_test = build_pipelines(shuffle_data, num_examples)
+    ds_train, ds_test = build_pipelines(
+        shuffle_data, num_examples_train, num_examples_test
+    )
 
     model = build_model()
 
